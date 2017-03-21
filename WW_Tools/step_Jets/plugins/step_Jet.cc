@@ -1,4 +1,4 @@
-#include "CTPPS_analyzes/WW_Tools/WW_Tools.h"
+#include "WW_Tools/WW_Tools.h"
 
 class step_Jet : public edm::stream::EDFilter<> {
 	public:
