@@ -5,7 +5,7 @@ process = cms.Process("Demo")
 # define collections once
 vertices         = 'offlineSlimmedPrimaryVertices'
 MET		 = 'slimmedMETs'
-Tracks           = 'generalTracks'
+PFCand           = 'packedPFCandidates'
 ppsz_resolution  = cms.double(0.22)
 
 # Muons
@@ -33,7 +33,7 @@ N_jet_max        = cms.double(99.0)
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.options=cms.untracked.PSet(wantSummary=cms.untracked.bool(True))
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(20000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(40000) )
 ## std sequence for pat
 process.load("PhysicsTools.PatAlgos.cleaningLayer1.cleanPatCandidates_cff")
 
@@ -42,7 +42,6 @@ process.load("PhysicsTools.PatAlgos.cleaningLayer1.cleanPatCandidates_cff")
 sourcefile = 'files.txt'
 
 # path to rootfiles
-#path = '/afs/cern.ch/work/m/mthiel/private/ANALYZER/CMSSW_8_0_12/src/analyzer/analyzer/mount/'
 path = 'mount/'
 source = []
 # read input files from source file
@@ -136,7 +135,8 @@ process.demo = cms.EDAnalyzer('analyzer'
 	        , SelectedProtonB       = cms.InputTag("filterCTPPS","SelectedProtonB")
 		, selectedjets		= cms.InputTag("filterJets","selectedjets")
 		, selectedmuons		= cms.InputTag("filterMuons","selectedmuons")
-                , Tracks                = cms.InputTag(Tracks)
+                , PFCand                = cms.InputTag(PFCand)
+		, MCEvent 		= cms.untracked.InputTag("LHCTransport")
 )
 
 process.TFileService = cms.Service("TFileService",

@@ -54,16 +54,13 @@
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "AnalysisDataFormats/EWK/interface/WMuNuCandidate.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-#include "DataFormats/TrackReco/interface/TrackFwd.h"
-#include "DataFormats/Common/interface/RefToBase.h"
-#include "DataFormats/Math/interface/deltaPhi.h"
-#include "DataFormats/JetReco/interface/PFJet.h"
-#include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
-#include "DataFormats/Math/interface/deltaPhi.h"
 #include "WW_Tools/CalculatePzNu.hpp"
-
+#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
+#include "HepMC/GenEvent.h"
+#include "HepMC/GenVertex.h"
+#include "HepMC/GenParticle.h"
+#include <TMath.h>
 
 typedef std::vector<CTPPSFastRecHit> CTPPSFastRecHitContainer;
 typedef std::vector<CTPPSFastTrack> CTPPSFastTrackContainer;

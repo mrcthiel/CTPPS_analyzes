@@ -33,9 +33,10 @@ class analyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		edm::EDGetTokenT<std::vector<double>> SelectedVertices;
 		edm::Handle<std::vector<reco::GenParticle>> genP;
 		edm::EDGetTokenT<std::vector<reco::GenParticle>> GenToken;
-		edm::Handle<std::vector<reco::Track>> Tracks;
-		edm::EDGetTokenT<std::vector<reco::Track>> TracksToken;
-
+		edm::Handle<std::vector<pat::PackedCandidate>> PFCand;
+		edm::EDGetTokenT<std::vector<pat::PackedCandidate>> PFCandToken;		
+		edm::EDGetTokenT< edm::HepMCProduct > mcEventToken; // label of MC event
+		edm::Handle< edm::HepMCProduct > EvtHandle ;
 		// creating the trees
 		TTree* EventBranchs_PPS;
 		TTree* EventBranchs_Jets;
@@ -44,7 +45,7 @@ class analyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		TTree* EventBranchs_Met;
 		TTree* EventBranchs_WL;
 		TTree* EventBranchs_WW;
-		TTree* EventBranchs_Tracks;
+		TTree* EventBranchs_pfCand;		
 		TTree* EventBranchs_Neutrino;
 		TTree* EventBranchs_Neutrino_Mix;
 		TTree* EventBranchs_WL_Nu;
@@ -68,6 +69,8 @@ class analyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		std::vector<double> *PFy2V 	= new std::vector<double> ();
 		std::vector<double> *PBx2V 	= new std::vector<double> ();
 		std::vector<double> *PBy2V 	= new std::vector<double> ();
+                std::vector<double> *PFcellId      = new std::vector<double> ();
+                std::vector<double> *PBcellId      = new std::vector<double> ();
 		std::vector<double> *DTofV 	= new std::vector<double> ();
 		std::vector<double> *DVV 	= new std::vector<double> ();
 		std::vector<double> *MWWMXV_Nu = new std::vector<double> ();
@@ -78,6 +81,14 @@ class analyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		std::vector<double> *Y_YV_Mix = new std::vector<double> ();
 		std::vector<double> *VtxzV = new std::vector<double> ();
 		std::vector<double> *Ypp = new std::vector<double> ();
+		std::vector<double> *Dvzpf = new std::vector<double> ();
+		std::vector<double> *Dvxpf = new std::vector<double> ();
+		std::vector<double> *Dvypf = new std::vector<double> ();
+		std::vector<double> *genProtonF_xi = new std::vector<double> ();
+		std::vector<double> *genProtonF_t = new std::vector<double> ();
+		std::vector<double> *genProtonB_xi = new std::vector<double> ();
+		std::vector<double> *genProtonB_t = new std::vector<double> ();
+
 
 		double Mx, NVPPS, NPF, NPB, PFxi, PBxi, PFt, PBt, PFTof, PBTof, PFx1, PFy1, PBx1, PBy1, PFx2, PFy2, PBx2, PBy2, DTof, Vtxz, oPV, DV;
 		double NM, Mpx, Mpy, Mpz, ME, Mpt, Mphi, Meta, DMoPVx, DMoPVy, DMoPVz;
@@ -89,14 +100,13 @@ class analyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		double J3pt, DRJ3J, WJMgen, WJMgenqq;
 		double dif_muon, WWacop;
 		double pi = 3.14159265359;
-		double N_T_tot, N_T_vtx, N_T_extra;
+		double npfVtx, npf, N_pfCand_tot, N_pfCand_vtx, N_pfCand_extra;		
 		double Neutrino_Px, Neutrino_Py, Neutrino_Pz, Neutrino_Pt, Neutrino_phi, Neutrino_eta, Neutrino_E;
 		double Neutrino_mix_Px, Neutrino_mix_Py, Neutrino_mix_Pz, Neutrino_mix_Pt, Neutrino_mix_phi, Neutrino_mix_eta, Neutrino_mix_E;
 		double WLeptonic_M, WLeptonic_Px, WLeptonic_Py, WLeptonic_Pz, WLeptonic_Pt, WLeptonic_phi, WLeptonic_eta, WLeptonic_E;
 		double WLeptonic_mix_M, WLeptonic_mix_Px, WLeptonic_mix_Py, WLeptonic_mix_Pz, WLeptonic_mix_Pt,	WLeptonic_mix_phi, WLeptonic_mix_eta, WLeptonic_mix_E;	
 		double AcopMuMet, AcopMuWJ;
 		double genWhad_px, genWhad_py, genWhad_pz, genWhad_pt, genWhad_E, genWhad_phi, genWhad_eta, genWlep_px, genWlep_py, genWlep_pz, genWlep_pt, genWlep_E, genWlep_phi, genWlep_eta, genQrk1_px, genQrk1_py, genQrk1_pz, genQrk1_pt, genQrk1_E, genQrk1_phi, genQrk1_eta, genQrk2_px, genQrk2_py, genQrk2_pz, genQrk2_pt, genQrk2_E, genQrk2_phi, genQrk2_eta, genMuon_px, genMuon_py, genMuon_pz, genMuon_pt, genMuon_E, genMuon_phi, genMuon_eta, genNeut_px, genNeut_py,	genNeut_pz, genNeut_pt, genNeut_E, genNeut_phi, genNeut_eta;
-
 };
 
 //
@@ -124,7 +134,9 @@ analyzer::analyzer(const edm::ParameterSet& iConfig):
 	, SelectedProtonB (consumes<std::vector<size_t>>(iConfig.getParameter<edm::InputTag>("SelectedProtonB")))
 	, SelectedVertices (consumes<std::vector<double>>(iConfig.getParameter<edm::InputTag>("SelectedVertice")))
 	, GenToken (consumes<std::vector<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("genP")))
-	, TracksToken (consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("Tracks"))){
+	, PFCandToken (consumes<std::vector<pat::PackedCandidate>>(iConfig.getParameter<edm::InputTag>("PFCand")))
+	, mcEventToken (consumes<edm::HepMCProduct>(iConfig.getUntrackedParameter<edm::InputTag>("MCEvent",std::string("")))){
+
 		//now do what ever initialization is needed
 
 		usesResource("TFileService");
@@ -145,6 +157,8 @@ analyzer::analyzer(const edm::ParameterSet& iConfig):
 		EventBranchs_PPS->Branch("PFx2V","std::vector<double>",&PFx2V);
 		EventBranchs_PPS->Branch("PBx2V","std::vector<double>",&PBx2V);
 		EventBranchs_PPS->Branch("PBy2V","std::vector<double>",&PBy2V);
+                EventBranchs_PPS->Branch("PFcellId","std::vector<double>",&PFcellId);
+                EventBranchs_PPS->Branch("PBcellId","std::vector<double>",&PBcellId);
 		EventBranchs_PPS->Branch("DTofV","std::vector<double>",&DTofV);
 		EventBranchs_PPS->Branch("DVV"	,"std::vector<double>",&DVV);
 		EventBranchs_PPS->Branch("VtxzV","std::vector<double>",&VtxzV);	
@@ -311,10 +325,17 @@ analyzer::analyzer(const edm::ParameterSet& iConfig):
 		EventBranchs_Gen->Branch("genNeut_E",&genNeut_E,"genNeut_E/D");
 		EventBranchs_Gen->Branch("genNeut_phi",&genNeut_phi,"genNeut_phi/D");
 		EventBranchs_Gen->Branch("genNeut_eta",&genNeut_eta,"genNeut_eta/D");
-		EventBranchs_Tracks                             = fs->make<TTree>( "Tracks","Tracks" );
-		EventBranchs_Tracks->Branch("N_T_tot",&N_T_tot,"N_T_tot/D");
-		EventBranchs_Tracks->Branch("N_T_vtx",&N_T_vtx,"N_T_vtx/D");
-		EventBranchs_Tracks->Branch("N_T_extra",&N_T_extra,"N_T_extra/D");
+		EventBranchs_Gen->Branch("genProtonF_xi","std::vector<double>",&genProtonF_xi);
+		EventBranchs_Gen->Branch("genProtonB_xi","std::vector<double>",&genProtonB_xi);
+		EventBranchs_Gen->Branch("genProtonF_t","std::vector<double>",&genProtonF_t);
+		EventBranchs_Gen->Branch("genProtonB_t","std::vector<double>",&genProtonB_t);
+		EventBranchs_pfCand                             = fs->make<TTree>( "pfCand","pfCand" );
+		EventBranchs_pfCand->Branch("N_pfCand_tot",&N_pfCand_tot,"N_pfCand_tot/D");
+		EventBranchs_pfCand->Branch("N_pfCand_vtx",&N_pfCand_vtx,"N_pfCand_vtx/D");
+		EventBranchs_pfCand->Branch("N_pfCand_extra",&N_pfCand_extra,"N_pfCand_extra/D");
+		EventBranchs_pfCand->Branch("Dvzpf","std::vector<double>",&Dvzpf);
+		EventBranchs_pfCand->Branch("Dvxpf","std::vector<double>",&Dvxpf);
+		EventBranchs_pfCand->Branch("Dvypf","std::vector<double>",&Dvypf);
 
 		//	EventBranchs_Gen 				= fs->make<TTree>( "Gen","Gen" );	
 	}
@@ -347,6 +368,8 @@ analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	PFy2V->clear();
 	PBx2V->clear();
 	PBy2V->clear();
+        PFcellId->clear();
+        PBcellId->clear();
 	DTofV->clear();
 	DVV->clear();
 	MWWMXV_Nu->clear();
@@ -357,9 +380,18 @@ analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	Y_YV_Mix->clear();
 	VtxzV->clear();
 	Ypp->clear();
+	Dvzpf->clear();
+	Dvxpf->clear();
+	Dvypf->clear();
+	genProtonF_xi->clear();
+	genProtonB_xi->clear();
+	genProtonF_t->clear();
+	genProtonB_t->clear();
+
 
 	using namespace edm;
 	using namespace std;
+
 
 	Handle<vector<size_t>> jets_selected;
 	iEvent.getByToken(selectedjets,jets_selected);
@@ -378,7 +410,9 @@ analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	iEvent.getByToken(genjetsToken, genjets);
 	iEvent.getByToken(MetToken, MET);
 	iEvent.getByToken(GenToken, genP);
-	iEvent.getByToken(TracksToken, Tracks);
+	iEvent.getByToken(PFCandToken, PFCand);
+	Handle<edm::HepMCProduct> EvtHandle;
+	iEvent.getByToken(mcEventToken, EvtHandle);
 
 	//
 	// CT-PPS:
@@ -401,6 +435,8 @@ analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 			PFy2V->push_back(tracksPPS->at(protonF_selected->at(jj)).Y2());
 			PBx2V->push_back(tracksPPS->at(protonB_selected->at(jj)).X2());
 			PBy2V->push_back(tracksPPS->at(protonB_selected->at(jj)).Y2());
+                        PFcellId->push_back(tracksPPS->at(protonF_selected->at(jj)).cellId());
+                        PBcellId->push_back(tracksPPS->at(protonB_selected->at(jj)).cellId());
 			DTofV->push_back(tracksPPS->at(protonB_selected->at(jj)).tof()-tracksPPS->at(protonF_selected->at(jj)).tof());
 			Ypp->push_back(0.5*log((tracksPPS->at(protonF_selected->at(jj)).xi())/(tracksPPS->at(protonB_selected->at(jj)).xi())));
 			VtxzV->push_back(Vertice_selected->at(jj));
@@ -408,7 +444,7 @@ analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 		}
 
 		NVPPS = Vertice_selected->size();		
-	} else { cout << "" << endl;}
+	}
 
 
 	//
@@ -581,27 +617,37 @@ analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	AcopMuWJ = (1-(abs(deltaPhi(Mphi,WJphi)))/(pi));
 
 	//
-	// Tracks
+	// pfCand
 	//	
 
-	int nT = 0;
-	int nTVtx = 0;
-	for (size_t pf = 0; pf < Tracks->size(); pf++) {
-		if (abs(Tracks->at(pf).vertex().z()-vertices->at(0).z())<0.05 && abs(Tracks->at(pf).vertex().x()-vertices->at(0).x())<0.015 && abs(Tracks->at(pf).vertex().z()-vertices->at(0).z())<0.015 ){
-			nTVtx++;
-			if (pow(pow(deltaPhi(Tracks->at(pf).phi(),jets->at(jets_selected->at(0)).phi()),2)+pow(( Tracks->at(pf).eta()-jets->at(jets_selected->at(0)).eta()),2),0.5)>0.4) {
-				if (pow(pow(deltaPhi(Tracks->at(pf).phi(),jets->at(jets_selected->at(1)).phi()),2)+pow(( Tracks->at(pf).eta()-jets->at(jets_selected->at(1)).eta()),2),0.5)>0.4) {
-					if (pow(pow(deltaPhi(Tracks->at(pf).phi(),muons->at(muons_selected->at(0)).phi()),2)+pow(( Tracks->at(pf).eta()-muons->at(muons_selected->at(0)).eta()),2),0.5)>0.3) {
-						nT++;
+	npf = 0;
+	npfVtx = 0;
+	for (size_t pf = 0; pf < PFCand->size(); pf++) {
+		if (abs(PFCand->at(pf).pdgId()) == 211 || abs(PFCand->at(pf).pdgId()) == 11 || abs(PFCand->at(pf).pdgId()) == 13){
+			if (PFCand->at(pf).fromPV(0)==3) {
+				if ((abs(PFCand->at(pf).vertex().z()-vertices->at(0).z())<0.02) && (abs(PFCand->at(pf).vertex().x()-vertices->at(0).x())<0.006) && (abs(PFCand->at(pf).vertex().y()-vertices->at(0).y())<0.006)){
+					npfVtx++;
+					if (pow(pow(deltaPhi(PFCand->at(pf).phiAtVtx(),jets->at(jets_selected->at(0)).phi()),2)+pow(( PFCand->at(pf).eta()-jets->at(jets_selected->at(0)).eta()),2),0.5)>0.4) {
+						if (pow(pow(deltaPhi(PFCand->at(pf).phiAtVtx(),jets->at(jets_selected->at(1)).phi()),2)+pow(( PFCand->at(pf).eta()-jets->at(jets_selected->at(1)).eta()),2),0.5)>0.4) {
+							if (pow(pow(deltaPhi(PFCand->at(pf).phiAtVtx(),muons->at(muons_selected->at(0)).phi()),2)+pow(( PFCand->at(pf).eta()-muons->at(muons_selected->at(0)).eta()),2),0.5)>0.3) {
+								npf++;
+							}
+						}
 					}
 				}
+
+				Dvzpf->push_back(abs(PFCand->at(pf).vertex().z()-vertices->at(0).z()));
+				Dvxpf->push_back(abs(PFCand->at(pf).vertex().x()-vertices->at(0).x()));
+				Dvypf->push_back(abs(PFCand->at(pf).vertex().y()-vertices->at(0).y()));
 			}
 		}
 	}
 
-	N_T_tot = Tracks->size();
-	N_T_vtx = nTVtx;
-	N_T_extra  = nT;	
+
+	N_pfCand_tot = PFCand->size();
+	N_pfCand_vtx = npfVtx;
+	N_pfCand_extra  = npf;
+
 
 	//
 	// GenParticle
@@ -688,6 +734,37 @@ analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	genNeut_phi = genNeut.Phi();
 	genNeut_eta = genNeut.Eta();
 
+	// Gen Proton
+	const double ProtonMass = 0.93827;
+	const double ProtonMassSQ = pow(ProtonMass,2);
+	const double fBeamEnergy = 6500.0;
+	const double fBeamMomentum = sqrt(fBeamEnergy*fBeamEnergy - ProtonMassSQ);
+	const HepMC::GenEvent* Evt = EvtHandle->GetEvent() ;
+	for(HepMC::GenEvent::particle_const_iterator i=Evt->particles_begin(); i != Evt->particles_end();++i) {
+		if(((*i)->pdg_id())!=2212) continue;
+		if(!((*i)->status() == 2)) continue;	
+		HepMC::FourVector momentum=(*i)->momentum();
+		double e = sqrt(pow((momentum.x()),2)+pow((momentum.y()),2)+pow((momentum.z()),2)+ProtonMassSQ);
+		TLorentzVector* proton = new TLorentzVector(momentum.x(),momentum.y(),momentum.z(),e);
+		double energy = proton->E();
+		double theta = (proton->Pz()>0)?(proton->Theta()):(TMath::Pi()-proton->Theta());
+		double t = -1.;
+		double xi = -1.;    
+		double mom = proton->P();
+//		if(proton->P()<1000) continue;
+		if (mom>fBeamMomentum) mom = fBeamMomentum;
+		t = -2.*(ProtonMassSQ-fBeamEnergy*energy+fBeamMomentum*mom*cos(theta));
+		xi = (1.0-energy/fBeamEnergy);		
+		if (proton->Pz()>0) {
+			genProtonF_xi->push_back(xi);
+			genProtonF_t->push_back(t);
+		} else {
+			genProtonB_xi->push_back(xi);
+			genProtonB_t->push_back(t);
+		}			
+	}
+
+
 	// Fill
 	EventBranchs_PPS->Fill();
 	EventBranchs_Muon->Fill();
@@ -696,7 +773,7 @@ analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	EventBranchs_Met->Fill();
 	EventBranchs_WL->Fill();
 	EventBranchs_WW->Fill();
-	EventBranchs_Tracks->Fill();
+	EventBranchs_pfCand->Fill();
 	EventBranchs_Gen->Fill();
 	EventBranchs_Neutrino->Fill();
 	EventBranchs_WL_Nu->Fill();

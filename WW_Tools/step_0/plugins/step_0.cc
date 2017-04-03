@@ -39,7 +39,6 @@ bool step_0::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 	selected_jets.clear();
 	selected_muons.clear();
 
-
 	double ZPPS_V = -9999;
 	double limit = 431.4/(0.299792458);
 	if(tracksPPS.isValid()) {
